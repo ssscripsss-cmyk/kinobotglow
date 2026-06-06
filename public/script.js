@@ -1,149 +1,269 @@
 const tg = window.Telegram.WebApp;
-tg.expand(); // Ilovani to'liq ekranga ochish
+tg.expand();
 tg.ready();
-
-// Tema ranglarini Telegram orqali olish (ixtiyoriy)
-// Hozir biz o'zimizning neon dizayndan foydalanamiz, shuning uchun bunga ko'p e'tibor qaratmaymiz.
 
 const mainContent = document.getElementById('main-content');
 const navItems = document.querySelectorAll('.nav-item');
 
-// Foydalanuvchi ma'lumotlari
 const user = tg.initDataUnsafe?.user || {
     id: 123456789,
     first_name: "Test Foydalanuvchi",
     username: "testuser"
 };
 
-// Adminlarni belgilash (O'zingizning Telegram ID'ingizni shu yerga qo'shishingiz kerak)
-// Siz bot tokenini yuborgan bo'lsangiz ham, o'z idingizni bilish kerak. Hozircha barcha uchun ochiq, lekin keyin o'zgartiramiz.
-const ADMIN_ID = 'Sizning_ID_raqamingiz_shu_yerda'; 
+const ADMIN_ID = user.id; // Vaqtincha admin qilib qo'ydik, real loyihada maxsus ID lar tekshiriladi
+document.getElementById('admin-btn').style.display = 'block';
 
-// Dastlabki sahifani ochish
-switchTab('kino');
+// --- TILLAR LUG'ATI ---
+let currentLang = 'uz'; // Default
+const dict = {
+    uz: {
+        kino: "🎬 Kino", serial: "📺 Serial", musiqa: "🎵 Musiqa", saq: "❤️ Saqlanganlar", vip: "⭐ VIP", profil: "👤 Profil",
+        latest_movies: "Eng so'nggi kinolar", popular_series: "Ommabop Seriallar",
+        music: "Musiqalar", nothing: "Hozircha hech narsa yo'q.",
+        admin_panel: "⚙️ Admin Panel",
+        vip_title: "⭐ VIP Obuna Xarid Qilish",
+        vip_desc: "Telegram yulduzchalari (Stars) orqali VIP obuna sotib oling va barcha kino, seriallarni cheklovsiz tomosha qiling!",
+        m_1: "1 Oylik VIP", m_3: "3 Oylik VIP", m_6: "6 Oylik VIP", y_1: "1 Yillik VIP",
+        cat_uz: "O'zbekcha", cat_ru: "Ruscha", cat_tr: "Turkcha", cat_all: "Barchasi"
+    },
+    ru: {
+        kino: "🎬 Кино", serial: "📺 Сериалы", musiqa: "🎵 Музыка", saq: "❤️ Сохраненные", vip: "⭐ VIP", profil: "👤 Профиль",
+        latest_movies: "Последние фильмы", popular_series: "Популярные сериалы",
+        music: "Музыка", nothing: "Пока ничего нет.",
+        admin_panel: "⚙️ Админ Панель",
+        vip_title: "⭐ Купить VIP подписку",
+        vip_desc: "Купите VIP подписку за Telegram Звезды (Stars) и смотрите фильмы и сериалы без ограничений!",
+        m_1: "1 Месяц VIP", m_3: "3 Месяца VIP", m_6: "6 Месяцев VIP", y_1: "1 Год VIP",
+        cat_uz: "Узбекская", cat_ru: "Русская", cat_tr: "Турецкая", cat_all: "Все"
+    },
+    kk: {
+        kino: "🎬 Кино", serial: "📺 Сериалдар", musiqa: "🎵 Музыка", saq: "❤️ Сақталғандар", vip: "⭐ VIP", profil: "👤 Профиль",
+        latest_movies: "Ең соңғы фильмдер", popular_series: "Танымал сериалдар",
+        music: "Музыка", nothing: "Әзірге ештеңе жоқ.",
+        admin_panel: "⚙️ Админ панелі",
+        vip_title: "⭐ VIP Жазылым Сатып Алу",
+        vip_desc: "Telegram Жұлдыздары (Stars) арқылы VIP жазылым сатып алыңыз және барлық фильмдер мен сериалдарды шектеусіз көріңіз!",
+        m_1: "1 Айлық VIP", m_3: "3 Айлық VIP", m_6: "6 Айлық VIP", y_1: "1 Жылдық VIP",
+        cat_uz: "Өзбекше", cat_ru: "Орысша", cat_tr: "Түрікше", cat_all: "Барлығы"
+    }
+};
+
+function t(key) { return dict[currentLang][key]; }
+
+function applyLanguage() {
+    document.getElementById('nav-kino').innerText = t('kino');
+    document.getElementById('nav-serial').innerText = t('serial');
+    document.getElementById('nav-musiqa').innerText = t('musiqa');
+    document.getElementById('nav-saq').innerText = t('saq');
+    document.getElementById('nav-vip').innerText = t('vip');
+    document.getElementById('nav-profil').innerText = t('profil');
+    document.getElementById('admin-btn').innerText = t('admin_panel');
+}
+
+// Boshlang'ich Meteorlar qo'shish
+function createMeteors() {
+    const space = document.getElementById('space-background');
+    for(let i=0; i<3; i++) {
+        let m = document.createElement('div');
+        m.className = 'meteor';
+        m.style.top = Math.random() * 50 + '%';
+        m.style.left = Math.random() * 100 + '%';
+        m.style.animationDelay = Math.random() * 5 + 's';
+        space.appendChild(m);
+    }
+}
+createMeteors();
+
+// Bookmarks (Saqlanganlar) holatini xotirada saqlash
+let bookmarks = [];
+
+// Saqlanganlarni serverdan yuklash
+function loadBookmarks() {
+    fetch(`/api/bookmarks?telegramId=${user.id}`)
+    .then(res => res.json())
+    .then(data => {
+        bookmarks = data.map(item => item.id);
+        switchTab('kino'); // Boshlang'ich oyna
+    }).catch(e => console.log(e));
+}
+loadBookmarks();
+
+function toggleBookmark(event, id) {
+    event.stopPropagation(); // Kartani bosilishidan saqlaydi
+    fetch('/api/bookmarks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ telegramId: user.id, contentId: id })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const btn = document.getElementById('bm-' + id);
+        if(data.bookmarked) {
+            bookmarks.push(id);
+            if(btn) { btn.classList.add('saved'); btn.innerText = '❤️'; }
+        } else {
+            bookmarks = bookmarks.filter(bid => bid !== id);
+            if(btn) { btn.classList.remove('saved'); btn.innerText = '🤍'; }
+        }
+    });
+}
 
 function switchTab(tabName) {
-    // Navbatdagi tugmani faollashtirish
     navItems.forEach(btn => btn.classList.remove('active'));
-    // Tugmani topib active qilish (admin tugmasidan tashqari)
-    const activeBtn = Array.from(navItems).find(btn => btn.textContent.toLowerCase().includes(tabName.toLowerCase()));
+    const activeBtn = document.getElementById('nav-' + (tabName === 'saqlanganlar' ? 'saq' : tabName));
     if (activeBtn) activeBtn.classList.add('active');
 
-    if (tabName === 'kino') renderKino();
-    else if (tabName === 'serial') renderSerial();
-    else if (tabName === 'musiqa') renderMusiqa();
+    applyLanguage();
+
+    if (tabName === 'kino') fetchAndRenderContent('kino', 'var(--neon-orange)', t('latest_movies'));
+    else if (tabName === 'serial') fetchAndRenderContent('serial', 'var(--neon-violet)', t('popular_series'));
+    else if (tabName === 'musiqa') renderMusiqa('all');
+    else if (tabName === 'saqlanganlar') renderBookmarks();
     else if (tabName === 'vip') renderVip();
     else if (tabName === 'profil') renderProfil();
     else if (tabName === 'admin') renderAdmin();
 }
 
-function renderKino() {
-    // API dan ma'lumot olmagunimizcha mock data ko'rsatamiz
-    mainContent.innerHTML = `
-        <h2 style="margin-bottom: 15px; color: var(--neon-orange);">Eng so'nggi kinolar</h2>
-        <div class="card-grid">
-            <div class="card">
-                <div class="vip-badge">VIP</div>
-                <img src="https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg" alt="Deadpool">
-                <div class="card-info">
-                    <div class="card-title">Deadpool va Wolverine</div>
+function fetchAndRenderContent(type, titleColor, titleText, category = 'all') {
+    mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: ${titleColor};">${titleText}</h2><p>Yuklanmoqda...</p>`;
+    
+    let url = `/api/content?type=${type}`;
+    if(category && category !== 'all') url += `&category=${category}`;
+
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+        if (data.length === 0) {
+            mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: ${titleColor};">${titleText}</h2><p>${t('nothing')}</p>`;
+            return;
+        }
+
+        let html = `<h2 style="margin-bottom: 15px; color: ${titleColor};">${titleText}</h2><div class="card-grid">`;
+        
+        data.forEach(item => {
+            const isBookmarked = bookmarks.includes(item.id);
+            const heart = isBookmarked ? '❤️' : '🤍';
+            const heartClass = isBookmarked ? 'saved' : '';
+
+            html += `
+                <div class="card" onclick="openContent('${item.url}')">
+                    <div id="bm-${item.id}" class="bookmark-btn ${heartClass}" onclick="toggleBookmark(event, ${item.id})">${heart}</div>
+                    ${item.is_vip ? '<div class="vip-badge">VIP</div>' : ''}
+                    <img src="${item.image_url}" alt="${item.title}">
+                    <div class="card-info">
+                        <div class="card-title">${item.title}</div>
+                    </div>
                 </div>
-            </div>
-            <div class="card">
-                <img src="https://image.tmdb.org/t/p/w500/A4j8S6moJS2zNtRR8oWF08gRnL5.jpg" alt="Dune">
-                <div class="card-info">
-                    <div class="card-title">Dune 2</div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="vip-badge">VIP</div>
-                <img src="https://image.tmdb.org/t/p/w500/fdZpvZCGvVKGpiUG1OefH41BGlX.jpg" alt="Oppenheimer">
-                <div class="card-info">
-                    <div class="card-title">Oppenheimer</div>
-                </div>
-            </div>
-            <div class="card">
-                <img src="https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzRx5xUGlsz.jpg" alt="Barbie">
-                <div class="card-info">
-                    <div class="card-title">Barbie</div>
-                </div>
-            </div>
-        </div>
-    `;
+            `;
+        });
+        html += `</div>`;
+        mainContent.innerHTML = html;
+    })
+    .catch(err => mainContent.innerHTML = `<p>Xatolik: ${err}</p>`);
 }
 
-function renderSerial() {
-    mainContent.innerHTML = `
-        <h2 style="margin-bottom: 15px; color: var(--neon-violet);">Ommabop Seriallar</h2>
-        <div class="card-grid">
-            <div class="card">
-                <div class="vip-badge">VIP</div>
-                <img src="https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizXCJo.jpg" alt="Breaking Bad">
-                <div class="card-info">
-                    <div class="card-title">Breaking Bad</div>
-                </div>
-            </div>
-            <div class="card">
-                <img src="https://image.tmdb.org/t/p/w500/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg" alt="Game of Thrones">
-                <div class="card-info">
-                    <div class="card-title">Game of Thrones</div>
-                </div>
-            </div>
+function renderMusiqa(cat) {
+    let html = `
+        <h2 style="margin-bottom: 15px; color: #fff;">${t('music')}</h2>
+        <div class="lang-tabs">
+            <div class="lang-tab ${cat==='all'?'active':''}" onclick="renderMusiqa('all')">${t('cat_all')}</div>
+            <div class="lang-tab ${cat==='uz'?'active':''}" onclick="renderMusiqa('uz')">${t('cat_uz')}</div>
+            <div class="lang-tab ${cat==='ru'?'active':''}" onclick="renderMusiqa('ru')">${t('cat_ru')}</div>
+            <div class="lang-tab ${cat==='tr'?'active':''}" onclick="renderMusiqa('tr')">${t('cat_tr')}</div>
         </div>
+        <div id="music-list">Yuklanmoqda...</div>
     `;
+    mainContent.innerHTML = html;
+
+    let url = `/api/content?type=musiqa`;
+    if(cat !== 'all') url += `&category=${cat}`;
+
+    fetch(url).then(res => res.json()).then(data => {
+        let mHtml = '';
+        if(data.length === 0) mHtml = `<p>${t('nothing')}</p>`;
+        data.forEach(item => {
+            const isBookmarked = bookmarks.includes(item.id);
+            const heart = isBookmarked ? '❤️' : '🤍';
+            const heartClass = isBookmarked ? 'saved' : '';
+
+            mHtml += `
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; position: relative;">
+                    <div id="bm-${item.id}" class="bookmark-btn ${heartClass}" style="right: 10px; left: auto; top: 10px;" onclick="toggleBookmark(event, ${item.id})">${heart}</div>
+                    <p style="margin-bottom: 5px; padding-right: 40px;">${item.title}</p>
+                    ${item.is_vip ? '<div class="vip-badge" style="position: static; display: inline-block; margin-bottom: 5px;">VIP</div>' : ''}
+                    <audio controls style="width: 100%; height: 30px; margin-top: 5px;">
+                        <source src="${item.url}" type="audio/mpeg">
+                    </audio>
+                </div>
+            `;
+        });
+        document.getElementById('music-list').innerHTML = mHtml;
+    });
 }
 
-function renderMusiqa() {
-    mainContent.innerHTML = `
-        <h2 style="margin-bottom: 15px; color: #fff;">Musiqalar</h2>
-        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-            <p style="margin-bottom: 5px;">Miyagi - I Got Love</p>
-            <audio controls style="width: 100%; height: 30px;">
-                <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-            </audio>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-            <p style="margin-bottom: 5px;">Xcho - Ты и я (VIP)</p>
-            <div class="vip-badge" style="position: static; display: inline-block; margin-bottom: 5px;">VIP</div>
-            <audio controls style="width: 100%; height: 30px;">
-                <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
-            </audio>
-        </div>
-    `;
+function renderBookmarks() {
+    mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: #ff3b30;">${t('saq')}</h2><p>Yuklanmoqda...</p>`;
+    fetch(`/api/bookmarks?telegramId=${user.id}`)
+    .then(res => res.json())
+    .then(data => {
+        if (data.length === 0) {
+            mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: #ff3b30;">${t('saq')}</h2><p>${t('nothing')}</p>`;
+            return;
+        }
+
+        let html = `<h2 style="margin-bottom: 15px; color: #ff3b30;">${t('saq')}</h2><div class="card-grid">`;
+        data.forEach(item => {
+            if(item.type === 'musiqa') {
+                html += `
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; position: relative; grid-column: span 2;">
+                    <div id="bm-${item.id}" class="bookmark-btn saved" style="right: 10px; left: auto; top: 10px;" onclick="toggleBookmark(event, ${item.id}); renderBookmarks();">❤️</div>
+                    <p style="margin-bottom: 5px; padding-right: 40px;">${item.title}</p>
+                    <audio controls style="width: 100%; height: 30px;">
+                        <source src="${item.url}" type="audio/mpeg">
+                    </audio>
+                </div>`;
+            } else {
+                html += `
+                <div class="card" onclick="openContent('${item.url}')">
+                    <div id="bm-${item.id}" class="bookmark-btn saved" onclick="event.stopPropagation(); toggleBookmark(event, ${item.id}); setTimeout(renderBookmarks, 200);">❤️</div>
+                    ${item.is_vip ? '<div class="vip-badge">VIP</div>' : ''}
+                    <img src="${item.image_url}" alt="${item.title}">
+                    <div class="card-info">
+                        <div class="card-title">${item.title}</div>
+                    </div>
+                </div>`;
+            }
+        });
+        html += `</div>`;
+        mainContent.innerHTML = html;
+    });
+}
+
+function openContent(url) {
+    window.open(url, '_blank');
 }
 
 function renderVip() {
     mainContent.innerHTML = `
-        <h2 style="margin-bottom: 15px; text-align: center; color: var(--neon-violet);">⭐ VIP Obuna Xarid Qilish</h2>
-        <p style="text-align: center; font-size: 14px; margin-bottom: 20px; color: #ccc;">Telegram yulduzchalari (Stars) orqali VIP obuna sotib oling va barcha kino, seriallarni cheklovsiz tomosha qiling!</p>
+        <h2 style="margin-bottom: 15px; text-align: center; color: var(--neon-violet);">${t('vip_title')}</h2>
+        <p style="text-align: center; font-size: 14px; margin-bottom: 20px; color: #ccc;">${t('vip_desc')}</p>
         
         <div class="vip-packages">
             <div class="vip-plan">
-                <div class="plan-info">
-                    <h3>1 Oylik VIP</h3>
-                    <p>Barcha kinolarga kirish</p>
-                </div>
+                <div class="plan-info"><h3>${t('m_1')}</h3></div>
                 <button class="buy-btn" onclick="buyPackage('1_month')">100 ⭐</button>
             </div>
             <div class="vip-plan">
-                <div class="plan-info">
-                    <h3>3 Oylik VIP</h3>
-                    <p>3 oy davomida bemalol tomosha</p>
-                </div>
+                <div class="plan-info"><h3>${t('m_3')}</h3></div>
                 <button class="buy-btn" onclick="buyPackage('3_months')">200 ⭐</button>
             </div>
             <div class="vip-plan">
-                <div class="plan-info">
-                    <h3>6 Oylik VIP</h3>
-                    <p>Chegirmali obuna</p>
-                </div>
+                <div class="plan-info"><h3>${t('m_6')}</h3></div>
                 <button class="buy-btn" onclick="buyPackage('6_months')">350 ⭐</button>
             </div>
             <div class="vip-plan">
-                <div class="plan-info">
-                    <h3>1 Yillik VIP</h3>
-                    <p>Eng katta foyda!</p>
-                </div>
+                <div class="plan-info"><h3>${t('y_1')}</h3></div>
                 <button class="buy-btn" onclick="buyPackage('1_year')">500 ⭐</button>
             </div>
         </div>
@@ -156,52 +276,110 @@ function renderProfil() {
             <div class="avatar">👤</div>
             <h2>${user.first_name}</h2>
             <p style="color: #aaa; margin-bottom: 20px;">@${user.username || 'username'}</p>
-            
-            <div style="background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 1px solid var(--neon-orange);">
-                <h3>Sizning Obunangiz</h3>
-                <p style="font-size: 20px; font-weight: bold; margin-top: 10px; color: var(--neon-orange);">Oddiy (Free)</p>
-                <button class="buy-btn" style="margin-top: 15px;" onclick="switchTab('vip')">VIP ga o'tish</button>
+
+            <h3 style="margin-top: 20px; color: var(--neon-orange);">Tilni o'zgartirish</h3>
+            <div class="lang-tabs" style="margin-top: 10px;">
+                <div class="lang-tab ${currentLang==='uz'?'active':''}" onclick="setLang('uz')">O'zbek</div>
+                <div class="lang-tab ${currentLang==='ru'?'active':''}" onclick="setLang('ru')">Русский</div>
+                <div class="lang-tab ${currentLang==='kk'?'active':''}" onclick="setLang('kk')">Қазақ</div>
             </div>
         </div>
     `;
 }
 
-// Telegram Stars orqali to'lovni boshlash
+function setLang(l) {
+    currentLang = l;
+    applyLanguage();
+    renderProfil();
+}
+
+function renderAdmin() {
+    mainContent.innerHTML = `
+        <h2 style="color: var(--neon-orange); margin-bottom: 15px;">Admin Panel</h2>
+        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;">
+            <label>Turi:</label>
+            <select id="a-type" onchange="toggleCat()">
+                <option value="kino">Kino</option>
+                <option value="serial">Serial</option>
+                <option value="musiqa">Musiqa</option>
+            </select>
+            
+            <div id="cat-box" style="display:none;">
+                <label>Musiqa Tili:</label>
+                <select id="a-cat">
+                    <option value="uz">O'zbekcha</option>
+                    <option value="ru">Ruscha</option>
+                    <option value="tr">Turkcha</option>
+                </select>
+            </div>
+
+            <input type="text" id="a-title" placeholder="Nomi (masalan: Deadpool)">
+            <input type="text" id="a-url" placeholder="Video/Audio silkasi (MP4, MP3 manzili)">
+            <input type="text" id="a-img" placeholder="Rasm silkasi (kinolar uchun)">
+            <label style="display:block; margin-bottom: 15px; color: white;">
+                <input type="checkbox" id="a-vip" style="width: auto; display: inline-block;"> VIP kontentmi?
+            </label>
+            <button class="buy-btn" onclick="addContent()" style="width: 100%;">Bazaga qo'shish</button>
+            <p id="a-msg" style="color: lime; margin-top: 10px;"></p>
+        </div>
+    `;
+}
+
+function toggleCat() {
+    const type = document.getElementById('a-type').value;
+    document.getElementById('cat-box').style.display = type === 'musiqa' ? 'block' : 'none';
+}
+
+function addContent() {
+    const type = document.getElementById('a-type').value;
+    const title = document.getElementById('a-title').value;
+    const url = document.getElementById('a-url').value;
+    const image_url = document.getElementById('a-img').value;
+    const is_vip = document.getElementById('a-vip').checked;
+    const category = type === 'musiqa' ? document.getElementById('a-cat').value : '';
+
+    if (!title || !url) return alert("Nomi va havola kiritilishi shart!");
+
+    fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, title, url, image_url, is_vip, category })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('a-msg').innerText = "Muvaffaqiyatli qo'shildi!";
+            document.getElementById('a-title').value = '';
+            document.getElementById('a-url').value = '';
+            document.getElementById('a-img').value = '';
+        } else {
+            document.getElementById('a-msg').innerText = "Xatolik yuz berdi.";
+        }
+    })
+    .catch(err => alert("Xato: " + err));
+}
+
 function buyPackage(packageType) {
     tg.MainButton.text = "To'lovni tayyorlash...";
     tg.MainButton.show();
     tg.MainButton.showProgress();
 
-    // Backendimizga to'lov havolasini so'rash uchun request yuboramiz
     fetch('/api/create-invoice', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            telegramId: user.id,
-            packageType: packageType
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: user.id, packageType: packageType })
     })
     .then(res => res.json())
     .then(data => {
         tg.MainButton.hide();
         if (data.success && data.invoiceLink) {
-            // Telegram to'lov oynasini ochamiz
             tg.openInvoice(data.invoiceLink, function(status) {
-                if (status === 'paid') {
-                    tg.showAlert("Tabriklaymiz! To'lov muvaffaqiyatli amalga oshirildi. VIP obunangiz faollashdi.");
-                    // Qayta profilni render qilishimiz mumkin
-                } else if (status === 'failed') {
-                    tg.showAlert("To'lov bekor qilindi yoki xato yuz berdi.");
-                }
+                if (status === 'paid') tg.showAlert("To'lov muvaffaqiyatli!");
             });
         } else {
-            tg.showAlert("Xatolik yuz berdi. Iltimos, keyinroq urinib ko'ring.");
+            tg.showAlert("Xatolik yuz berdi.");
         }
-    })
-    .catch(err => {
-        tg.MainButton.hide();
-        tg.showAlert("Server bilan bog'lanishda xato: " + err);
+    }).catch(err => {
+        tg.MainButton.hide(); tg.showAlert("Server xatosi.");
     });
 }

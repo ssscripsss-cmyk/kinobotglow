@@ -100,6 +100,35 @@ body {
     100% { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
 }
 
+/* Yulduz uchishi (Meteor) */
+.meteor {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 2px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.4);
+    animation: meteor-fall 4s linear infinite;
+    z-index: 2;
+}
+.meteor::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,1), transparent);
+}
+
+@keyframes meteor-fall {
+    0% { transform: rotate(-45deg) translateX(0); opacity: 1; }
+    70% { opacity: 1; }
+    100% { transform: rotate(-45deg) translateX(-1000px); opacity: 0; }
+}
+
 /* =========================================
    UI QOBIQ (APP CONTAINER)
 ========================================= */
@@ -247,6 +276,49 @@ header {
     font-size: 10px;
     font-weight: bold;
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    z-index: 5;
+}
+
+.bookmark-btn {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 5;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--glass-border);
+}
+.bookmark-btn.saved {
+    color: #ff3b30;
+    text-shadow: 0 0 10px #ff3b30;
+}
+
+/* Til tanlash uchun tablar */
+.lang-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.lang-tab {
+    padding: 8px 15px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.lang-tab.active {
+    background: var(--neon-violet);
+    border-color: var(--neon-violet);
+    box-shadow: 0 0 10px var(--neon-violet);
 }
 
 /* =========================================

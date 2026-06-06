@@ -4,9 +4,9 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
 
-// Bot tokeni (xavfsizlik uchun alohida .env da saqlash tavsiya etiladi, ammo hozir oson bo'lishi uchun shu yerda yozamiz)
+// Bot tokeni
 const BOT_TOKEN = '8966917946:AAFGRS9_ZObIhuMAjGrJKBLNc6atp14Somk';
-const WEB_APP_URL = 'https://kino-glow-app.com'; // Buni keyinrok ngrok orqali almashtiramiz
+const WEB_APP_URL = 'https://kinobotglow.onrender.com';
 const PORT = 3000;
 
 // Express va Botni ishga tushiramiz
@@ -29,7 +29,8 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
             id INTEGER PRIMARY KEY,
             telegram_id TEXT UNIQUE,
             username TEXT,
-            vip_until DATETIME
+            vip_until DATETIME,
+            language TEXT DEFAULT 'uz'
         )`);
         
         db.run(`CREATE TABLE IF NOT EXISTS content (
@@ -38,8 +39,20 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
             title TEXT,
             url TEXT,
             image_url TEXT,
-            is_vip BOOLEAN DEFAULT 0
+            is_vip BOOLEAN DEFAULT 0,
+            category TEXT -- 'uz', 'ru', 'tr'
         )`);
+
+        db.run(`CREATE TABLE IF NOT EXISTS bookmarks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_id TEXT,
+            content_id INTEGER,
+            UNIQUE(telegram_id, content_id)
+        )`);
+        
+        // Agar ustunlar yo'q bo'lsa (oldin yaratilgan bo'lsa) xato bermasligi uchun try-catch
+        db.run(`ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'uz'`, (err) => {});
+        db.run(`ALTER TABLE content ADD COLUMN category TEXT`, (err) => {});
     }
 });
 
@@ -49,18 +62,44 @@ bot.start((ctx) => {
     const username = ctx.from.username || ctx.from.first_name;
 
     // Foydalanuvchini bazaga saqlash
-    db.run(`INSERT OR IGNORE INTO users (telegram_id, username) VALUES (?, ?)`, [userId, username]);
+    db.run(`INSERT OR IGNORE INTO users (telegram_id, username) VALUES (?, ?)`, [userId, username], function() {
+        db.get(`SELECT language FROM users WHERE telegram_id = ?`, [userId], (err, row) => {
+            const lang = row ? row.language : 'uz';
+            
+            let text = `✨ Salom ${username}! Kino Glow ga xush kelibsiz.\n\n👇 Quyidagi tugma orqali ilovaga kiring va VIP kinolardan bahramand bo'ling!`;
+            let btnText = "🎬 Kino Glow-ni ochish";
+            
+            if (lang === 'ru') {
+                text = `✨ Привет ${username}! Добро пожаловать в Kino Glow.\n\n👇 Нажмите кнопку ниже, чтобы войти в приложение!`;
+                btnText = "🎬 Открыть Kino Glow";
+            } else if (lang === 'kk') {
+                text = `✨ Сәлем ${username}! Kino Glow-ға қош келдіңіз.\n\n👇 Қосымшаға кіру үшін төмендегі түймені басыңыз!`;
+                btnText = "🎬 Kino Glow ашу";
+            }
 
-    // O'yin/Ilova tugmasini ko'rsatish
-    ctx.reply(
-        `✨ Salom ${username}! Kino Glow ga xush kelibsiz.\n\n👇 Quyidagi tugma orqali ilovaga kiring va VIP kinolardan bahramand bo'ling!`,
-        Markup.inlineKeyboard([
-            // Bu tugma orqali bizning Express serverimizdagi webapp ochiladi
-            // Hozircha lokal ishlayotgani uchun ngrok link kerak bo'ladi, buni keyin sozlaymiz.
-            Markup.button.webApp("🎬 Kino Glow-ni ochish", "https://kinobotglow.onrender.com") // Placeholder link
-        ])
-    );
+            ctx.reply(text, Markup.inlineKeyboard([
+                [Markup.button.webApp(btnText, WEB_APP_URL)],
+                [
+                    Markup.button.callback("🇺🇿 O'zbek", "lang_uz"),
+                    Markup.button.callback("🇷🇺 Русский", "lang_ru"),
+                    Markup.button.callback("🇰🇿 Қазақ", "lang_kk")
+                ]
+            ]));
+        });
+    });
 });
+
+// Tilni o'zgartirish handlerlari
+bot.action('lang_uz', ctx => changeLanguage(ctx, 'uz', "Til O'zbek tiliga o'zgartirildi!"));
+bot.action('lang_ru', ctx => changeLanguage(ctx, 'ru', "Язык изменен на русский!"));
+bot.action('lang_kk', ctx => changeLanguage(ctx, 'kk', "Тіл қазақ тіліне өзгертілді!"));
+
+function changeLanguage(ctx, langCode, msg) {
+    db.run(`UPDATE users SET language = ? WHERE telegram_id = ?`, [langCode, ctx.from.id], () => {
+        ctx.answerCbQuery(msg).catch(()=>console.log);
+        ctx.reply(msg);
+    });
+}
 
 // Telegram Stars orqali to'lov varaqasini (Invoice) yaratish API si
 app.post('/api/create-invoice', async (req, res) => {
@@ -140,15 +179,70 @@ bot.on('successful_payment', (ctx) => {
 // 3. Express server API (Frontend uchun ma'lumotlar)
 app.get('/api/content', (req, res) => {
     const type = req.query.type || 'kino';
-    db.all(`SELECT * FROM content WHERE type = ?`, [type], (err, rows) => {
+    const category = req.query.category;
+    
+    let query = `SELECT * FROM content WHERE type = ?`;
+    let params = [type];
+    
+    if (category && category !== 'all') {
+        query += ` AND category = ?`;
+        params.push(category);
+    }
+    
+    query += ` ORDER BY id DESC`;
+
+    db.all(query, params, (err, rows) => {
         if (err) return res.status(500).json({error: err.message});
         res.json(rows);
     });
 });
 
+app.post('/api/content', (req, res) => {
+    const { type, title, url, image_url, is_vip, category } = req.body;
+    db.run(
+        `INSERT INTO content (type, title, url, image_url, is_vip, category) VALUES (?, ?, ?, ?, ?, ?)`,
+        [type, title, url, image_url, is_vip ? 1 : 0, category || ''],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+});
+
+// Bookmarks API
+app.get('/api/bookmarks', (req, res) => {
+    const telegramId = req.query.telegramId;
+    if (!telegramId) return res.status(400).json({error: "telegramId kerak"});
+    
+    db.all(`
+        SELECT c.* FROM content c
+        JOIN bookmarks b ON c.id = b.content_id
+        WHERE b.telegram_id = ?
+        ORDER BY b.id DESC
+    `, [telegramId], (err, rows) => {
+        if (err) return res.status(500).json({error: err.message});
+        res.json(rows);
+    });
+});
+
+app.post('/api/bookmarks', (req, res) => {
+    const { telegramId, contentId } = req.body;
+    if (!telegramId || !contentId) return res.status(400).json({error: "telegramId va contentId kerak"});
+    
+    db.get(`SELECT id FROM bookmarks WHERE telegram_id = ? AND content_id = ?`, [telegramId, contentId], (err, row) => {
+        if (row) {
+            // Agar bor bo'lsa, o'chirish (toggle)
+            db.run(`DELETE FROM bookmarks WHERE id = ?`, [row.id], () => res.json({ bookmarked: false }));
+        } else {
+            // Agar yo'q bo'lsa, qo'shish
+            db.run(`INSERT INTO bookmarks (telegram_id, content_id) VALUES (?, ?)`, [telegramId, contentId], () => res.json({ bookmarked: true }));
+        }
+    });
+});
+
 // 4. Serverni ishga tushirish
 app.listen(PORT, () => {
-   console.log("Web server ishga tushdi");
+    console.log(\`Web server http://localhost:\${PORT} da ishga tushdi.\`);
     bot.launch().then(() => {
         console.log("Telegram bot ishga tushdi!");
     });
