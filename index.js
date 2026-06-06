@@ -241,6 +241,14 @@ app.post('/api/bookmarks', (req, res) => {
 });
 
 // 4. Serverni ishga tushirish
+// Kontentni o'chirish API
+app.delete('/api/content/:id', (req, res) => {
+    const id = req.params.id;
+    db.run(`DELETE FROM content WHERE id = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
 app.listen(PORT, () => {
     console.log("Web server ishga tushdi");
     bot.launch().then(() => {
