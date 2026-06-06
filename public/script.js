@@ -265,8 +265,42 @@ function renderAdmin() {
                 <input type="checkbox" id="a-vip" style="width:auto;display:inline-block;"> VIP kontentmi?
             </label>
             <button class="buy-btn" onclick="addContent()" style="width:100%;">Bazaga qo'shish</button>
-            <p id="a-msg" style="color:lime;margin-top:10px;"></p>
+            <p id="a-msg" style="color:lime;margin-top:10px;"></p> <h3 style="color:#fff;margin-top:20px;margin-bottom:10px;">
+            Barcha kontentlar:</h3><div id="content-list">Yuklanmoqda...</div>
         </div>`;
+        // Kontentlar ro'yxatini yuklash
+    setTimeout(loadAdminList, 100);
+}
+
+function loadAdminList() {
+    const listDiv = document.getElementById('content-list');
+    if (!listDiv) return;
+    fetch('/api/content?type=kino').then(r=>r.json()).then(k => {
+    fetch('/api/content?type=serial').then(r=>r.json()).then(s => {
+    fetch('/api/content?type=musiqa').then(r=>r.json()).then(m => {
+        const all = [...k, ...s, ...m];
+        if(all.length === 0) { listDiv.innerHTML = '<p>Hech narsa yo\'q</p>'; return; }
+        let html = '';
+        all.forEach(item => {
+            html += `
+            <div style="background:rgba(255,255,255,0.1);padding:10px;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;">${item.type === 'musiqa' ? '🎵' : item.type === 'serial' ? '📺' : '🎬'} ${item.title}</span>
+                <button onclick="deleteContent(${item.id})" style="background:#ff3b30;border:none;color:white;padding:5px 12px;border-radius:15px;cursor:pointer;font-size:12px;">🗑 O'chir</button>
+            </div>`;
+        });
+        listDiv.innerHTML = html;
+    });});});
+}
+
+function deleteContent(id) {
+    if(!confirm("Haqiqatan o'chirasizmi?")) return;
+    fetch('/api/content/' + id, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) { loadAdminList(); }
+        else alert("Xatolik!");
+    });
+}
 }
 
 function toggleCat() {
