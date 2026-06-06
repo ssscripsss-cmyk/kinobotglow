@@ -5,7 +5,7 @@ const cors = require('cors');
 const path = require('path');
 
 // Bot tokeni (xavfsizlik uchun alohida .env da saqlash tavsiya etiladi, ammo hozir oson bo'lishi uchun shu yerda yozamiz)
-const BOT_TOKEN = '8966917946:AAFh7clQwxMgrOL-slMks0cSmwxy9KRaL_U';
+const BOT_TOKEN = '8966917946:AAFGRS9_ZObIhuMAjGrJKBLNc6atp14Somk';
 const WEB_APP_URL = 'https://kino-glow-app.com'; // Buni keyinrok ngrok orqali almashtiramiz
 const PORT = 3000;
 
