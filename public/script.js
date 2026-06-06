@@ -11,11 +11,10 @@ const user = tg.initDataUnsafe?.user || {
     username: "testuser"
 };
 
-const ADMIN_ID = user.id; // Vaqtincha admin qilib qo'ydik, real loyihada maxsus ID lar tekshiriladi
+const ADMIN_ID = user.id;
 document.getElementById('admin-btn').style.display = 'block';
 
-// --- TILLAR LUG'ATI ---
-let currentLang = 'uz'; // Default
+let currentLang = 'uz';
 const dict = {
     uz: {
         kino: "🎬 Kino", serial: "📺 Serial", musiqa: "🎵 Musiqa", saq: "❤️ Saqlanganlar", vip: "⭐ VIP", profil: "👤 Profil",
@@ -23,7 +22,7 @@ const dict = {
         music: "Musiqalar", nothing: "Hozircha hech narsa yo'q.",
         admin_panel: "⚙️ Admin Panel",
         vip_title: "⭐ VIP Obuna Xarid Qilish",
-        vip_desc: "Telegram yulduzchalari (Stars) orqali VIP obuna sotib oling va barcha kino, seriallarni cheklovsiz tomosha qiling!",
+        vip_desc: "Telegram yulduzchalari orqali VIP obuna sotib oling!",
         m_1: "1 Oylik VIP", m_3: "3 Oylik VIP", m_6: "6 Oylik VIP", y_1: "1 Yillik VIP",
         cat_uz: "O'zbekcha", cat_ru: "Ruscha", cat_tr: "Turkcha", cat_all: "Barchasi"
     },
@@ -33,7 +32,7 @@ const dict = {
         music: "Музыка", nothing: "Пока ничего нет.",
         admin_panel: "⚙️ Админ Панель",
         vip_title: "⭐ Купить VIP подписку",
-        vip_desc: "Купите VIP подписку за Telegram Звезды (Stars) и смотрите фильмы и сериалы без ограничений!",
+        vip_desc: "Купите VIP подписку за Telegram Звезды!",
         m_1: "1 Месяц VIP", m_3: "3 Месяца VIP", m_6: "6 Месяцев VIP", y_1: "1 Год VIP",
         cat_uz: "Узбекская", cat_ru: "Русская", cat_tr: "Турецкая", cat_all: "Все"
     },
@@ -43,7 +42,7 @@ const dict = {
         music: "Музыка", nothing: "Әзірге ештеңе жоқ.",
         admin_panel: "⚙️ Админ панелі",
         vip_title: "⭐ VIP Жазылым Сатып Алу",
-        vip_desc: "Telegram Жұлдыздары (Stars) арқылы VIP жазылым сатып алыңыз және барлық фильмдер мен сериалдарды шектеусіз көріңіз!",
+        vip_desc: "Telegram Жұлдыздары арқылы VIP жазылым сатып алыңыз!",
         m_1: "1 Айлық VIP", m_3: "3 Айлық VIP", m_6: "6 Айлық VIP", y_1: "1 Жылдық VIP",
         cat_uz: "Өзбекше", cat_ru: "Орысша", cat_tr: "Түрікше", cat_all: "Барлығы"
     }
@@ -61,7 +60,6 @@ function applyLanguage() {
     document.getElementById('admin-btn').innerText = t('admin_panel');
 }
 
-// Boshlang'ich Meteorlar qo'shish
 function createMeteors() {
     const space = document.getElementById('space-background');
     for(let i=0; i<3; i++) {
@@ -75,47 +73,37 @@ function createMeteors() {
 }
 createMeteors();
 
-// Bookmarks (Saqlanganlar) holatini xotirada saqlash
-let bookmarks = [];
+let bookmarks = JSON.parse(localStorage.getItem('kg_bookmarks') || '[]');
+let bookmarkItems = JSON.parse(localStorage.getItem('kg_bookmark_items') || '[]');
 
-// Saqlanganlarni serverdan yuklash
 function loadBookmarks() {
-    fetch(`/api/bookmarks?telegramId=${user.id}`)
-    .then(res => res.json())
-    .then(data => {
-        bookmarks = data.map(item => item.id);
-        switchTab('kino'); // Boshlang'ich oyna
-    }).catch(e => console.log(e));
+    bookmarks = JSON.parse(localStorage.getItem('kg_bookmarks') || '[]');
+    bookmarkItems = JSON.parse(localStorage.getItem('kg_bookmark_items') || '[]');
+    switchTab('kino');
 }
 loadBookmarks();
 
-function toggleBookmark(event, id) {
-    event.stopPropagation(); // Kartani bosilishidan saqlaydi
-    fetch('/api/bookmarks', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ telegramId: user.id, contentId: id })
-    })
-    .then(res => res.json())
-    .then(data => {
-        const btn = document.getElementById('bm-' + id);
-        if(data.bookmarked) {
-            bookmarks.push(id);
-            if(btn) { btn.classList.add('saved'); btn.innerText = '❤️'; }
-        } else {
-            bookmarks = bookmarks.filter(bid => bid !== id);
-            if(btn) { btn.classList.remove('saved'); btn.innerText = '🤍'; }
-        }
-    });
+function toggleBookmark(event, id, itemData) {
+    event.stopPropagation();
+    const btn = document.getElementById('bm-' + id);
+    if(bookmarks.includes(id)) {
+        bookmarks = bookmarks.filter(bid => bid !== id);
+        bookmarkItems = bookmarkItems.filter(item => item.id !== id);
+        if(btn) { btn.classList.remove('saved'); btn.innerText = '🤍'; }
+    } else {
+        bookmarks.push(id);
+        if(itemData) bookmarkItems.push(itemData);
+        if(btn) { btn.classList.add('saved'); btn.innerText = '❤️'; }
+    }
+    localStorage.setItem('kg_bookmarks', JSON.stringify(bookmarks));
+    localStorage.setItem('kg_bookmark_items', JSON.stringify(bookmarkItems));
 }
 
 function switchTab(tabName) {
     navItems.forEach(btn => btn.classList.remove('active'));
     const activeBtn = document.getElementById('nav-' + (tabName === 'saqlanganlar' ? 'saq' : tabName));
     if (activeBtn) activeBtn.classList.add('active');
-
     applyLanguage();
-
     if (tabName === 'kino') fetchAndRenderContent('kino', 'var(--neon-orange)', t('latest_movies'));
     else if (tabName === 'serial') fetchAndRenderContent('serial', 'var(--neon-violet)', t('popular_series'));
     else if (tabName === 'musiqa') renderMusiqa('all');
@@ -125,37 +113,35 @@ function switchTab(tabName) {
     else if (tabName === 'admin') renderAdmin();
 }
 
-function fetchAndRenderContent(type, titleColor, titleText, category = 'all') {
-    mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: ${titleColor};">${titleText}</h2><p>Yuklanmoqda...</p>`;
-    
-    let url = `/api/content?type=${type}`;
-    if(category && category !== 'all') url += `&category=${category}`;
+function getPlayer(item) {
+    const isGDrive = item.url && item.url.includes('drive.google.com');
+    return isGDrive
+        ? `<iframe src="${item.url}" width="100%" height="80" frameborder="0" allow="autoplay" style="border-radius:8px; margin-top:5px;"></iframe>`
+        : `<audio controls style="width:100%; height:30px; margin-top:5px;"><source src="${item.url}" type="audio/mpeg"></audio>`;
+}
 
-    fetch(url)
+function fetchAndRenderContent(type, titleColor, titleText) {
+    mainContent.innerHTML = `<h2 style="margin-bottom:15px;color:${titleColor};">${titleText}</h2><p>Yuklanmoqda...</p>`;
+    fetch(`/api/content?type=${type}&order=desc`)
     .then(res => res.json())
     .then(data => {
         if (data.length === 0) {
-            mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: ${titleColor};">${titleText}</h2><p>${t('nothing')}</p>`;
+            mainContent.innerHTML = `<h2 style="margin-bottom:15px;color:${titleColor};">${titleText}</h2><p>${t('nothing')}</p>`;
             return;
         }
-
-        let html = `<h2 style="margin-bottom: 15px; color: ${titleColor};">${titleText}</h2><div class="card-grid">`;
-        
+        let html = `<h2 style="margin-bottom:15px;color:${titleColor};">${titleText}</h2><div class="card-grid">`;
         data.forEach(item => {
             const isBookmarked = bookmarks.includes(item.id);
             const heart = isBookmarked ? '❤️' : '🤍';
             const heartClass = isBookmarked ? 'saved' : '';
-
+            const itemJson = JSON.stringify(item).replace(/'/g, "&apos;");
             html += `
                 <div class="card" onclick="openContent('${item.url}')">
-                    <div id="bm-${item.id}" class="bookmark-btn ${heartClass}" onclick="toggleBookmark(event, ${item.id})">${heart}</div>
+                    <div id="bm-${item.id}" class="bookmark-btn ${heartClass}" onclick="toggleBookmark(event,${item.id},${itemJson})">${heart}</div>
                     ${item.is_vip ? '<div class="vip-badge">VIP</div>' : ''}
                     <img src="${item.image_url}" alt="${item.title}">
-                    <div class="card-info">
-                        <div class="card-title">${item.title}</div>
-                    </div>
-                </div>
-            `;
+                    <div class="card-info"><div class="card-title">${item.title}</div></div>
+                </div>`;
         });
         html += `</div>`;
         mainContent.innerHTML = html;
@@ -164,110 +150,77 @@ function fetchAndRenderContent(type, titleColor, titleText, category = 'all') {
 }
 
 function renderMusiqa(cat) {
-    let html = `
-        <h2 style="margin-bottom: 15px; color: #fff;">${t('music')}</h2>
+    mainContent.innerHTML = `
+        <h2 style="margin-bottom:15px;color:#fff;">${t('music')}</h2>
         <div class="lang-tabs">
             <div class="lang-tab ${cat==='all'?'active':''}" onclick="renderMusiqa('all')">${t('cat_all')}</div>
             <div class="lang-tab ${cat==='uz'?'active':''}" onclick="renderMusiqa('uz')">${t('cat_uz')}</div>
             <div class="lang-tab ${cat==='ru'?'active':''}" onclick="renderMusiqa('ru')">${t('cat_ru')}</div>
             <div class="lang-tab ${cat==='tr'?'active':''}" onclick="renderMusiqa('tr')">${t('cat_tr')}</div>
         </div>
-        <div id="music-list">Yuklanmoqda...</div>
-    `;
-    mainContent.innerHTML = html;
-
+        <div id="music-list">Yuklanmoqda...</div>`;
     let url = `/api/content?type=musiqa`;
     if(cat !== 'all') url += `&category=${cat}`;
-
     fetch(url).then(res => res.json()).then(data => {
-        let mHtml = '';
-        if(data.length === 0) mHtml = `<p>${t('nothing')}</p>`;
+        let mHtml = data.length === 0 ? `<p>${t('nothing')}</p>` : '';
         data.forEach(item => {
             const isBookmarked = bookmarks.includes(item.id);
             const heart = isBookmarked ? '❤️' : '🤍';
             const heartClass = isBookmarked ? 'saved' : '';
-
+            const itemJson = JSON.stringify(item).replace(/'/g, "&apos;");
             mHtml += `
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; position: relative;">
-                    <div id="bm-${item.id}" class="bookmark-btn ${heartClass}" style="right: 10px; left: auto; top: 10px;" onclick="toggleBookmark(event, ${item.id})">${heart}</div>
-                    <p style="margin-bottom: 5px; padding-right: 40px;">${item.title}</p>
-                    ${item.is_vip ? '<div class="vip-badge" style="position: static; display: inline-block; margin-bottom: 5px;">VIP</div>' : ''}
-                    <audio controls style="width: 100%; height: 30px; margin-top: 5px;">
-                        <source src="${item.url}" type="audio/mpeg">
-                    </audio>
-                </div>
-            `;
+                <div style="background:rgba(255,255,255,0.1);padding:15px;border-radius:10px;margin-bottom:10px;position:relative;">
+                    <div id="bm-${item.id}" class="bookmark-btn ${heartClass}" style="right:10px;left:auto;top:10px;" onclick="toggleBookmark(event,${item.id},${itemJson})">${heart}</div>
+                    <p style="margin-bottom:5px;padding-right:40px;">${item.title}</p>
+                    ${item.is_vip ? '<div class="vip-badge" style="position:static;display:inline-block;margin-bottom:5px;">VIP</div>' : ''}
+                    ${getPlayer(item)}
+                </div>`;
         });
         document.getElementById('music-list').innerHTML = mHtml;
     });
 }
 
 function renderBookmarks() {
-    mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: #ff3b30;">${t('saq')}</h2><p>Yuklanmoqda...</p>`;
-    fetch(`/api/bookmarks?telegramId=${user.id}`)
-    .then(res => res.json())
-    .then(data => {
-        if (data.length === 0) {
-            mainContent.innerHTML = `<h2 style="margin-bottom: 15px; color: #ff3b30;">${t('saq')}</h2><p>${t('nothing')}</p>`;
-            return;
+    const data = bookmarkItems;
+    if (data.length === 0) {
+        mainContent.innerHTML = `<h2 style="margin-bottom:15px;color:#ff3b30;">${t('saq')}</h2><p>${t('nothing')}</p>`;
+        return;
+    }
+    let html = `<h2 style="margin-bottom:15px;color:#ff3b30;">${t('saq')}</h2><div class="card-grid">`;
+    data.forEach(item => {
+        if(item.type === 'musiqa') {
+            html += `
+            <div style="background:rgba(255,255,255,0.1);padding:15px;border-radius:10px;margin-bottom:10px;position:relative;grid-column:span 2;">
+                <div id="bm-${item.id}" class="bookmark-btn saved" style="right:10px;left:auto;top:10px;" onclick="toggleBookmark(event,${item.id});setTimeout(renderBookmarks,100);">❤️</div>
+                <p style="margin-bottom:5px;padding-right:40px;">${item.title}</p>
+                ${getPlayer(item)}
+            </div>`;
+        } else {
+            html += `
+            <div class="card" onclick="openContent('${item.url}')">
+                <div id="bm-${item.id}" class="bookmark-btn saved" onclick="event.stopPropagation();toggleBookmark(event,${item.id});setTimeout(renderBookmarks,100);">❤️</div>
+                ${item.is_vip ? '<div class="vip-badge">VIP</div>' : ''}
+                <img src="${item.image_url}" alt="${item.title}">
+                <div class="card-info"><div class="card-title">${item.title}</div></div>
+            </div>`;
         }
-
-        let html = `<h2 style="margin-bottom: 15px; color: #ff3b30;">${t('saq')}</h2><div class="card-grid">`;
-        data.forEach(item => {
-            if(item.type === 'musiqa') {
-                html += `
-                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; position: relative; grid-column: span 2;">
-                    <div id="bm-${item.id}" class="bookmark-btn saved" style="right: 10px; left: auto; top: 10px;" onclick="toggleBookmark(event, ${item.id}); renderBookmarks();">❤️</div>
-                    <p style="margin-bottom: 5px; padding-right: 40px;">${item.title}</p>
-                    <audio controls style="width: 100%; height: 30px;">
-                        <source src="${item.url}" type="audio/mpeg">
-                    </audio>
-                </div>`;
-            } else {
-                html += `
-                <div class="card" onclick="openContent('${item.url}')">
-                    <div id="bm-${item.id}" class="bookmark-btn saved" onclick="event.stopPropagation(); toggleBookmark(event, ${item.id}); setTimeout(renderBookmarks, 200);">❤️</div>
-                    ${item.is_vip ? '<div class="vip-badge">VIP</div>' : ''}
-                    <img src="${item.image_url}" alt="${item.title}">
-                    <div class="card-info">
-                        <div class="card-title">${item.title}</div>
-                    </div>
-                </div>`;
-            }
-        });
-        html += `</div>`;
-        mainContent.innerHTML = html;
     });
+    html += `</div>`;
+    mainContent.innerHTML = html;
 }
 
-function openContent(url) {
-    window.open(url, '_blank');
-}
+function openContent(url) { window.open(url, '_blank'); }
 
 function renderVip() {
     mainContent.innerHTML = `
-        <h2 style="margin-bottom: 15px; text-align: center; color: var(--neon-violet);">${t('vip_title')}</h2>
-        <p style="text-align: center; font-size: 14px; margin-bottom: 20px; color: #ccc;">${t('vip_desc')}</p>
-        
+        <h2 style="margin-bottom:15px;text-align:center;color:var(--neon-violet);">${t('vip_title')}</h2>
+        <p style="text-align:center;font-size:14px;margin-bottom:20px;color:#ccc;">${t('vip_desc')}</p>
         <div class="vip-packages">
-            <div class="vip-plan">
-                <div class="plan-info"><h3>${t('m_1')}</h3></div>
-                <button class="buy-btn" onclick="buyPackage('1_month')">100 ⭐</button>
-            </div>
-            <div class="vip-plan">
-                <div class="plan-info"><h3>${t('m_3')}</h3></div>
-                <button class="buy-btn" onclick="buyPackage('3_months')">200 ⭐</button>
-            </div>
-            <div class="vip-plan">
-                <div class="plan-info"><h3>${t('m_6')}</h3></div>
-                <button class="buy-btn" onclick="buyPackage('6_months')">350 ⭐</button>
-            </div>
-            <div class="vip-plan">
-                <div class="plan-info"><h3>${t('y_1')}</h3></div>
-                <button class="buy-btn" onclick="buyPackage('1_year')">500 ⭐</button>
-            </div>
-        </div>
-    `;
+            <div class="vip-plan"><div class="plan-info"><h3>${t('m_1')}</h3></div><button class="buy-btn" onclick="buyPackage('1_month')">100 ⭐</button></div>
+            <div class="vip-plan"><div class="plan-info"><h3>${t('m_3')}</h3></div><button class="buy-btn" onclick="buyPackage('3_months')">200 ⭐</button></div>
+            <div class="vip-plan"><div class="plan-info"><h3>${t('m_6')}</h3></div><button class="buy-btn" onclick="buyPackage('6_months')">350 ⭐</button></div>
+            <div class="vip-plan"><div class="plan-info"><h3>${t('y_1')}</h3></div><button class="buy-btn" onclick="buyPackage('1_year')">500 ⭐</button></div>
+        </div>`;
 }
 
 function renderProfil() {
@@ -275,35 +228,28 @@ function renderProfil() {
         <div class="profile-container">
             <div class="avatar">👤</div>
             <h2>${user.first_name}</h2>
-            <p style="color: #aaa; margin-bottom: 20px;">@${user.username || 'username'}</p>
-
-            <h3 style="margin-top: 20px; color: var(--neon-orange);">Tilni o'zgartirish</h3>
-            <div class="lang-tabs" style="margin-top: 10px;">
+            <p style="color:#aaa;margin-bottom:20px;">@${user.username || 'username'}</p>
+            <h3 style="margin-top:20px;color:var(--neon-orange);">Tilni o'zgartirish</h3>
+            <div class="lang-tabs" style="margin-top:10px;">
                 <div class="lang-tab ${currentLang==='uz'?'active':''}" onclick="setLang('uz')">O'zbek</div>
                 <div class="lang-tab ${currentLang==='ru'?'active':''}" onclick="setLang('ru')">Русский</div>
                 <div class="lang-tab ${currentLang==='kk'?'active':''}" onclick="setLang('kk')">Қазақ</div>
             </div>
-        </div>
-    `;
+        </div>`;
 }
 
-function setLang(l) {
-    currentLang = l;
-    applyLanguage();
-    renderProfil();
-}
+function setLang(l) { currentLang = l; applyLanguage(); renderProfil(); }
 
 function renderAdmin() {
     mainContent.innerHTML = `
-        <h2 style="color: var(--neon-orange); margin-bottom: 15px;">Admin Panel</h2>
-        <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;">
+        <h2 style="color:var(--neon-orange);margin-bottom:15px;">Admin Panel</h2>
+        <div style="background:rgba(0,0,0,0.6);padding:15px;border-radius:10px;">
             <label>Turi:</label>
             <select id="a-type" onchange="toggleCat()">
                 <option value="kino">Kino</option>
                 <option value="serial">Serial</option>
                 <option value="musiqa">Musiqa</option>
             </select>
-            
             <div id="cat-box" style="display:none;">
                 <label>Musiqa Tili:</label>
                 <select id="a-cat">
@@ -312,22 +258,19 @@ function renderAdmin() {
                     <option value="tr">Turkcha</option>
                 </select>
             </div>
-
             <input type="text" id="a-title" placeholder="Nomi (masalan: Deadpool)">
-            <input type="text" id="a-url" placeholder="Video/Audio silkasi (MP4, MP3 manzili)">
-            <input type="text" id="a-img" placeholder="Rasm silkasi (kinolar uchun)">
-            <label style="display:block; margin-bottom: 15px; color: white;">
-                <input type="checkbox" id="a-vip" style="width: auto; display: inline-block;"> VIP kontentmi?
+            <input type="text" id="a-url" placeholder="Video/Audio havolasi">
+            <input type="text" id="a-img" placeholder="Rasm havolasi (kinolar uchun)">
+            <label style="display:block;margin-bottom:15px;color:white;">
+                <input type="checkbox" id="a-vip" style="width:auto;display:inline-block;"> VIP kontentmi?
             </label>
-            <button class="buy-btn" onclick="addContent()" style="width: 100%;">Bazaga qo'shish</button>
-            <p id="a-msg" style="color: lime; margin-top: 10px;"></p>
-        </div>
-    `;
+            <button class="buy-btn" onclick="addContent()" style="width:100%;">Bazaga qo'shish</button>
+            <p id="a-msg" style="color:lime;margin-top:10px;"></p>
+        </div>`;
 }
 
 function toggleCat() {
-    const type = document.getElementById('a-type').value;
-    document.getElementById('cat-box').style.display = type === 'musiqa' ? 'block' : 'none';
+    document.getElementById('cat-box').style.display = document.getElementById('a-type').value === 'musiqa' ? 'block' : 'none';
 }
 
 function addContent() {
@@ -337,9 +280,7 @@ function addContent() {
     const image_url = document.getElementById('a-img').value;
     const is_vip = document.getElementById('a-vip').checked;
     const category = type === 'musiqa' ? document.getElementById('a-cat').value : '';
-
     if (!title || !url) return alert("Nomi va havola kiritilishi shart!");
-
     fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -347,13 +288,11 @@ function addContent() {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.success) {
-            document.getElementById('a-msg').innerText = "Muvaffaqiyatli qo'shildi!";
+        document.getElementById('a-msg').innerText = data.success ? "Muvaffaqiyatli qo'shildi!" : "Xatolik yuz berdi.";
+        if(data.success) {
             document.getElementById('a-title').value = '';
             document.getElementById('a-url').value = '';
             document.getElementById('a-img').value = '';
-        } else {
-            document.getElementById('a-msg').innerText = "Xatolik yuz berdi.";
         }
     })
     .catch(err => alert("Xato: " + err));
@@ -363,23 +302,18 @@ function buyPackage(packageType) {
     tg.MainButton.text = "To'lovni tayyorlash...";
     tg.MainButton.show();
     tg.MainButton.showProgress();
-
     fetch('/api/create-invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: user.id, packageType: packageType })
+        body: JSON.stringify({ telegramId: user.id, packageType })
     })
     .then(res => res.json())
     .then(data => {
         tg.MainButton.hide();
         if (data.success && data.invoiceLink) {
-            tg.openInvoice(data.invoiceLink, function(status) {
+            tg.openInvoice(data.invoiceLink, status => {
                 if (status === 'paid') tg.showAlert("To'lov muvaffaqiyatli!");
             });
-        } else {
-            tg.showAlert("Xatolik yuz berdi.");
-        }
-    }).catch(err => {
-        tg.MainButton.hide(); tg.showAlert("Server xatosi.");
-    });
+        } else tg.showAlert("Xatolik yuz berdi.");
+    }).catch(() => { tg.MainButton.hide(); tg.showAlert("Server xatosi."); });
 }
