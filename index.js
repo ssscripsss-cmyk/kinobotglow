@@ -57,7 +57,7 @@ bot.start((ctx) => {
         Markup.inlineKeyboard([
             // Bu tugma orqali bizning Express serverimizdagi webapp ochiladi
             // Hozircha lokal ishlayotgani uchun ngrok link kerak bo'ladi, buni keyin sozlaymiz.
-            Markup.button.webApp("🎬 Kino Glow-ni ochish", https://kinobotglow.onrender.com") // Placeholder link
+            Markup.button.webApp("🎬 Kino Glow-ni ochish", "https://kinobotglow.onrender.com") // Placeholder link
         ])
     );
 });
