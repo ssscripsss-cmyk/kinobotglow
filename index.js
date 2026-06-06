@@ -242,7 +242,7 @@ app.post('/api/bookmarks', (req, res) => {
 
 // 4. Serverni ishga tushirish
 app.listen(PORT, () => {
-    console.log(\`Web server http://localhost:\${PORT} da ishga tushdi.\`);
+    console.log("Web server ishga tushdi");
     bot.launch().then(() => {
         console.log("Telegram bot ishga tushdi!");
     });
