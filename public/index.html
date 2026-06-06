@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kino Glow</title>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Koinot Foni -->
+    <div id="space-background">
+        <div class="stars"></div>
+        <div class="twinkling"></div>
+        <div class="moon"></div>
+        <div class="satellite"></div>
+    </div>
+
+    <!-- Ilova Qobiqi -->
+    <div id="app-container">
+        
+        <!-- Yuqori panel: Sarlavha -->
+        <header>
+            <h1 class="glow-text">Kino Glow</h1>
+        </header>
+
+        <!-- Asosiy kontent joyi -->
+        <main id="main-content">
+            <!-- Bu yer javascript orqali to'ldiriladi -->
+        </main>
+
+        <!-- Pastki menyu (Tabs) -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('kino')">🎬 Kino</button>
+            <button class="nav-item" onclick="switchTab('serial')">📺 Serial</button>
+            <button class="nav-item" onclick="switchTab('musiqa')">🎵 Musiqa</button>
+            <button class="nav-item vip-btn" onclick="switchTab('vip')">⭐ VIP</button>
+            <button class="nav-item" onclick="switchTab('profil')">👤 Profil</button>
+        </nav>
+    </div>
+
+    <!-- Admin tugmasi faqat adminlar uchun ko'rinadi -->
+    <button id="admin-btn" style="display: none;" onclick="switchTab('admin')">⚙️ Admin Panel</button>
+
+    <script src="script.js"></script>
+</body>
+</html>

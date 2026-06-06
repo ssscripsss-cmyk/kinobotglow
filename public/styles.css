@@ -1,0 +1,333 @@
+/* Asosiy sozlamalar */
+:root {
+    --neon-violet: #bd00ff;
+    --neon-orange: #ff6600;
+    --bg-dark: #0a0a1a;
+    --text-light: #ffffff;
+    --glass-bg: rgba(20, 20, 40, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Outfit', sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    overflow: hidden; /* Ilova doim bitta ekranda turadi */
+    width: 100vw;
+    height: 100vh;
+}
+
+/* =========================================
+   KOINOT FON ANIMATSIYALARI
+========================================= */
+#space-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background: radial-gradient(circle at bottom, #1b0033 0%, #050011 100%);
+}
+
+/* Yulduzlar */
+.stars, .twinkling {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%;
+    display: block;
+}
+
+.stars {
+    background: #000 url('https://raw.githubusercontent.com/frontend-joe/css-stars/master/stars.png') repeat top center;
+    z-index: 0;
+}
+
+.twinkling {
+    background: transparent url('https://raw.githubusercontent.com/frontend-joe/css-stars/master/twinkling.png') repeat top center;
+    z-index: 1;
+    animation: move-twink-back 200s linear infinite;
+}
+
+@keyframes move-twink-back {
+    from {background-position: 0 0;}
+    to {background-position: -10000px 5000px;}
+}
+
+/* Oy */
+.moon {
+    position: absolute;
+    top: 10%;
+    right: 10%;
+    width: 80px;
+    height: 80px;
+    background: url('https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg') no-resize;
+    background-size: cover;
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.8), 0 0 100px var(--neon-violet);
+    z-index: 2;
+}
+
+/* Sputnik */
+.satellite {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    background-color: #ccc;
+    box-shadow: 0 0 10px #fff, 0 0 20px var(--neon-orange);
+    border-radius: 50%;
+    z-index: 3;
+    animation: orbit 15s linear infinite;
+}
+.satellite::after {
+    content: '';
+    position: absolute;
+    top: 5px; left: -10px; width: 40px; height: 10px;
+    background: #444; border: 1px solid #777; z-index: -1;
+}
+
+@keyframes orbit {
+    0% { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+}
+
+/* =========================================
+   UI QOBIQ (APP CONTAINER)
+========================================= */
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+/* Sarlavha */
+header {
+    padding: 20px;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(10,10,26,0.9), transparent);
+}
+
+.glow-text {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    text-shadow: 
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 20px var(--neon-violet),
+        0 0 40px var(--neon-violet),
+        0 0 80px var(--neon-orange),
+        0 0 100px var(--neon-orange);
+    animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.8; text-shadow: 0 0 20px var(--neon-violet), 0 0 40px var(--neon-orange); }
+    100% { opacity: 1; text-shadow: 0 0 30px var(--neon-violet), 0 0 60px var(--neon-orange), 0 0 90px var(--neon-orange); }
+}
+
+/* Asosiy Kontent */
+#main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    padding-bottom: 80px; /* Menyuga joy qoldirish */
+}
+/* Scrollbar yashirish */
+#main-content::-webkit-scrollbar { display: none; }
+
+/* Pastki menyu */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid var(--glass-border);
+    padding: 10px 0 25px 0; /* Pastdan iPhone home indikatoriga joy */
+}
+
+.nav-item {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: 0.3s all ease;
+}
+
+.nav-item.active {
+    color: var(--neon-orange);
+    text-shadow: 0 0 10px var(--neon-orange);
+    transform: scale(1.1);
+}
+
+.vip-btn {
+    color: var(--neon-violet);
+    font-weight: 800;
+    text-shadow: 0 0 10px var(--neon-violet);
+}
+.vip-btn.active {
+    color: #fff;
+    text-shadow: 0 0 20px var(--neon-violet), 0 0 40px var(--neon-violet);
+}
+
+/* =========================================
+   KARTALAR (Kino, Serial, Musiqa uchun)
+========================================= */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 15px var(--neon-violet);
+    border-color: var(--neon-violet);
+}
+
+.card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-bottom: 2px solid var(--neon-orange);
+}
+
+.card-info {
+    padding: 10px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vip-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: linear-gradient(45deg, var(--neon-violet), var(--neon-orange));
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+/* =========================================
+   VIP PAKETLAR (OBUNA EKRANI)
+========================================= */
+.vip-packages {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.vip-plan {
+    background: linear-gradient(135deg, rgba(189, 0, 255, 0.1), rgba(255, 102, 0, 0.1));
+    border: 2px solid var(--neon-violet);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: inset 0 0 20px rgba(189, 0, 255, 0.2);
+}
+
+.plan-info h3 {
+    font-size: 20px;
+    color: #fff;
+    margin-bottom: 5px;
+}
+.plan-info p {
+    font-size: 12px;
+    color: #bbb;
+}
+
+.buy-btn {
+    background: linear-gradient(45deg, var(--neon-violet), var(--neon-orange));
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--neon-orange);
+    transition: 0.3s;
+}
+
+.buy-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 30px var(--neon-violet);
+}
+
+/* =========================================
+   XABARLAR VA PROFIL
+========================================= */
+.profile-container {
+    text-align: center;
+    padding: 20px;
+}
+
+.avatar {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--neon-orange);
+    margin: 0 auto 15px auto;
+    background: #333;
+    display: flex;
+    align-items: center; justify-content: center;
+    font-size: 40px;
+    box-shadow: 0 0 20px var(--neon-violet);
+}
+
+/* Admin panel elementlari */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--neon-violet);
+    color: white;
+    border-radius: 10px;
+    outline: none;
+}
+input:focus {
+    box-shadow: 0 0 10px var(--neon-violet);
+}
